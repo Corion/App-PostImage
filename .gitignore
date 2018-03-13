@@ -1,0 +1,12 @@
+Makefile
+Makefile.old
+*.tar.gz
+*.bak
+pm_to_blib
+blib/
+App-PostImage-*
+App-PostImage-*/
+.releaserc
+cover_db
+MYMETA.*
+config.yml

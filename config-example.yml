@@ -1,0 +1,12 @@
+directories:
+    docroot: ./public/
+    upload: ./upload/
+urls:
+    #public_url: http://localhost:5000/
+    public_url: http://192.168.1.92:5000/
+image:
+    count: 10
+    formats:
+        - 500,500
+admin: "super-secret-admin-password-2018!"
+nonce: asdfghjkl
