@@ -5,11 +5,12 @@ no warnings 'experimental::signatures';
 use feature 'signatures';
 
 use Path::Class 'dir';
+use FindBin;
 
 use Mojo::Util 'hmac_sha1_sum';
 
 use YAML 'LoadFile';
-my $config = LoadFile('./config.yml');
+my $config = LoadFile("$FindBin::Bin/../config.yml");
 
 app->moniker( $config->{admin} );
 app->secrets([ $config->{nonce} ]);
@@ -38,7 +39,7 @@ post '/setup' => sub( $c ) {
     my $admin_password = $c->param('password');
     my $username = $c->param('name');
     $username =~ s!/!!g;
-    
+
     if( ! length $username ) {
         return $c->redirect_to( '/' );
     };
@@ -49,7 +50,7 @@ post '/setup' => sub( $c ) {
 
     my $auth_url = auth_url( 'login', $username );
     my $qr_image_url = auth_url( 'qr', $username ) . ".png";
-    
+
     # show QR code of result, and insta-use URL for the client to access
     $c->stash( auth_url => $auth_url );
     $c->stash( qr_url => $qr_image_url );
@@ -58,25 +59,7 @@ post '/setup' => sub( $c ) {
 };
 
 
-get '/login/:name/(:key)' => sub( $c ) {
-    my $username = $c->param('name');
-    my $key = $c->param('key');
-    # validate key
-    my $expected = hmac_sha1_sum($username, $config->{admin});
-    if( $expected ne $key ) {
-        return $c->redirect_to( '/' );
-    };
-
-    my $session = $c->session;
-    $session->{authenticated} = 1;
-    $session->{name} = param('name');
-    $c = $c->session( $session );
-    $c->session(expires => time + 365*24*3600);
-    
-    $c->redirect('./upload.html');
-}, name => 'login';
-
-get '/qr/:name/(:key).png' => sub($c) {
+get 'qr/:name/(:key).png' => sub($c) {
     my $username = $c->param('name');
     my $key = $c->param('key');
     my $url = $config->{urls}->{public_url} . "login/$username/$key";
@@ -90,31 +73,48 @@ get '/qr/:name/(:key).png' => sub($c) {
         lightcolor    => Imager::Color->new(255, 255, 255),
         darkcolor     => Imager::Color->new(0, 0, 0),
     });
-    warn $url;
     $img->write(data => \my $qr, type => 'png')
       or die "Failed to write: " . $img->errstr;
-    $c->render( data => $qr, format => 'png' );
+    return $c->render( data => $qr, format => 'png' );
 };
 
-get '/post' => sub( $c ) {
-    my $app = App::PostImage->new(
-        config => $config,
-    );
+get 'login/:name/:key' => sub( $c ) {
+    my $username = $c->param('name');
+    my $key = $c->param('key');
+    # validate key
+    my $expected = hmac_sha1_sum($username, $config->{admin});
+    if( $expected ne $key ) {
+        return $c->redirect_to( '/' );
+    };
+
+    my $session = $c->session;
+    $session->{authenticated} = 1;
+    $session->{name} = $c->param('name');
+    $c = $c->session( $session );
+    $c->session(expires => time + 365*24*3600);
+
+    $c->redirect_to('/upload.html');
+};
+
+post 'post' => sub( $c ) {
+    #my $app = App::PostImage->new(
+    #    config => $config,
+    #);
     if( ! $c->session->{authenticated} ) {
         $c->redirect_to('/index.html');
     };
-    
+
     # Save to local storage
     my $file = $c->param('file');
     my $name = sprintf "%s/img-%d.jpg", $config->{directories}->{upload}, time();
     $file->move_to( $name );
-    
-    my $ok = $app->add_image(
-    );
-    if( $ok ) {
-        $app->regenerate_image_list();
-    };
-}, name => 'post';
+
+    #my $ok = $app->add_image(
+    #);
+    #if( $ok ) {
+    #    $app->regenerate_image_list();
+    #};
+};
 
 app->start;
 
