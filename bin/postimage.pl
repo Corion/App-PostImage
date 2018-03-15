@@ -8,6 +8,7 @@ use Path::Class 'dir';
 use FindBin;
 
 use Mojo::Util 'hmac_sha1_sum';
+use Imager::QRCode 'plot_qrcode';
 
 use YAML 'LoadFile';
 my $config = LoadFile("$FindBin::Bin/../config.yml");
@@ -63,7 +64,6 @@ get 'qr/:name/(:key).png' => sub($c) {
     my $username = $c->param('name');
     my $key = $c->param('key');
     my $url = $config->{urls}->{public_url} . "login/$username/$key";
-    use Imager::QRCode 'plot_qrcode';
     my $img = plot_qrcode($url, {
         size          => 2,
         margin        => 2,
