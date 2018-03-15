@@ -20,6 +20,7 @@ app->secrets([ $config->{nonce} ]);
 # XXX Sanity-check directories
 
 push @{app->static->paths}, dir($config->{directories}->{docroot})->absolute->stringify;
+push @{app->static->paths}, dir("$FindBin::Bin/../public")->absolute->stringify;
 
 # / should be handled as a static file, /index.html!
 get '/' => sub( $c ) {
