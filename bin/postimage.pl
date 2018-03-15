@@ -38,7 +38,7 @@ sub auth_url( $prefix, $username ) {
     my $auth_url = sprintf '/%s/%s/%s', $prefix, $username, $key;
 }
 
-post '/setup' => sub( $c ) {
+post 'setup' => sub( $c ) {
     my $admin_password = $c->param('password');
     my $username = $c->param('name');
     $username =~ s!/!!g;
@@ -48,7 +48,7 @@ post '/setup' => sub( $c ) {
     };
 
     if( $admin_password ne $config->{admin} ) {
-        return $c->redirect_to( '/setup.html' );
+        return $c->redirect_to( 'setup.html' );
     };
 
     my $auth_url = auth_url( 'login', $username );
