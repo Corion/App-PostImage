@@ -10,6 +10,7 @@ use FindBin;
 use Mojo::Util 'hmac_sha1_sum';
 use Imager::QRCode 'plot_qrcode';
 use Text::CleanFragment;
+use App::PostImage;
 
 use YAML 'LoadFile';
 my $config = LoadFile("$FindBin::Bin/../config.yml");
@@ -103,9 +104,9 @@ get 'login/:name/:key' => sub( $c ) {
 };
 
 post 'post' => sub( $c ) {
-    #my $app = App::PostImage->new(
-    #    config => $config,
-    #);
+    my $app = App::PostImage->new(
+        config => $config,
+    );
     if( ! $c->session->{authenticated} ) {
         $c->redirect_to('/index.html');
     };
