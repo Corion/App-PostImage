@@ -9,6 +9,7 @@ use FindBin;
 
 use Mojo::Util 'hmac_sha1_sum';
 use Imager::QRCode 'plot_qrcode';
+use Text::CleanFragment;
 
 use YAML 'LoadFile';
 my $config = LoadFile("$FindBin::Bin/../config.yml");
@@ -110,7 +111,13 @@ post 'post' => sub( $c ) {
 
     # Save to local storage
     my $file = $c->param('file');
-    my $name = sprintf "%s/img-%d.jpg", $config->{directories}->{upload}, time();
+    my $filename = clean_fragment($file->filename);
+    $filename =~ s!\.jpe?g$!!i;
+    $filename .= '.jpg'; # force extension to .jpg
+
+    # XXX Validate that the content type is jpeg
+
+    my $name = sprintf "%s/%s", $config->{directories}->{upload}, $filename;
     $file->move_to( $name );
 
     #my $ok = $app->add_image(
