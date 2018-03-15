@@ -59,11 +59,7 @@ post '/setup' => sub( $c ) {
     $c->render(template => 'setup', format => 'html');
 };
 
-
-get 'qr/:name/(:key).png' => sub($c) {
-    my $username = $c->param('name');
-    my $key = $c->param('key');
-    my $url = $config->{urls}->{public_url} . "login/$username/$key";
+sub qrcode_for( $url ) {
     my $img = plot_qrcode($url, {
         size          => 2,
         margin        => 2,
@@ -75,6 +71,14 @@ get 'qr/:name/(:key).png' => sub($c) {
     });
     $img->write(data => \my $qr, type => 'png')
       or die "Failed to write: " . $img->errstr;
+    return $qr
+}
+
+get 'qr/:name/(:key).png' => sub($c) {
+    my $username = $c->param('name');
+    my $key = $c->param('key');
+    my $url = $config->{urls}->{public_url} . "login/$username/$key";
+    my $qr = qrcode_for( $url );
     return $c->render( data => $qr, format => 'png' );
 };
 
