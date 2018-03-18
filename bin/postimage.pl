@@ -12,15 +12,18 @@ use Imager::QRCode 'plot_qrcode';
 use Text::CleanFragment;
 use App::PostImage;
 
-use YAML 'LoadFile';
-my $config = LoadFile("$FindBin::Bin/../config.yml");
+my $backend = App::PostImage->new();
+my( $exitcode, @messages ) = $backend->check_config();
+if( $exitcode ) {
+    print sprintf "Errors in config file '%s':\n", $backend->config_file;
+    print "$_\n" for @messages;
+    exit $exitcode;
+};
 
-app->moniker( $config->{admin} );
-app->secrets([ $config->{nonce} ]);
+app->moniker( $backend->config->{admin} );
+app->secrets([ $backend->config->{nonce} ]);
 
-# XXX Sanity-check directories
-
-push @{app->static->paths}, dir($config->{directories}->{docroot})->absolute->stringify;
+push @{app->static->paths}, dir($backend->docroot)->absolute->stringify;
 push @{app->static->paths}, dir("$FindBin::Bin/../public")->absolute->stringify;
 
 # / should be handled as a static file, /index.html!
@@ -34,8 +37,36 @@ get '/' => sub( $c ) {
 #    $c->render('setup.html');
 #};
 
+=head2 C<< validate_session >>
+
+    my $s = validate_session( $c->session,
+        authenticated => 1,
+        name => scalar $c->param('name'),
+    );
+    $c->session( $s );
+
+Validates a session cookie for another year, marks the session for revalidation
+in three days.
+
+=cut
+
+sub validate_session( $c, %args ) {
+    my $session = $c->session;
+    my $username = $session->{name};
+    if( ! $backend->user_ok( $username )) {
+        return
+    };
+    %$session = (%$session,
+                 revalidate_in => $backend->config->{session}->{revalidate},
+                 expires       => (time + $backend->config->{session}->{expires}*24*3600),
+                 %args,
+    );
+
+    $session
+}
+
 sub auth_url( $prefix, $username ) {
-    my $key = hmac_sha1_sum($username, $config->{admin});
+    my $key = hmac_sha1_sum($username, $backend->config->{admin});
     my $auth_url = sprintf '/%s/%s/%s', $prefix, $username, $key;
 }
 
@@ -48,7 +79,7 @@ post 'setup' => sub( $c ) {
         return $c->redirect_to( '/' );
     };
 
-    if( $admin_password ne $config->{admin} ) {
+    if( $admin_password ne $backend->config->{admin} ) {
         return $c->redirect_to( 'setup.html' );
     };
 
@@ -80,7 +111,7 @@ sub qrcode_for( $url ) {
 get 'qr/:name/(:key).png' => sub($c) {
     my $username = $c->param('name');
     my $key = $c->param('key');
-    my $url = $config->{urls}->{public_url} . "login/$username/$key";
+    my $url = $backend->config->{urls}->{public_url} . "login/$username/$key";
     my $qr = qrcode_for( $url );
     return $c->render( data => $qr, format => 'png' );
 };
@@ -89,25 +120,28 @@ get 'login/:name/:key' => sub( $c ) {
     my $username = $c->param('name');
     my $key = $c->param('key');
     # validate key
-    my $expected = hmac_sha1_sum($username, $config->{admin});
+    my $expected = hmac_sha1_sum($username, $backend->config->{admin});
     if( $expected ne $key ) {
         return $c->redirect_to( '/' );
     };
 
-    my $session = $c->session;
-    $session->{authenticated} = 1;
-    $session->{name} = $c->param('name');
-    $c = $c->session( $session );
-    $c->session(expires => time + 365*24*3600);
+    my $s = validate_session( $c->session,
+        authenticated => 1,
+        name => scalar $c->param('name'),
+    );
+    $c->session( $s );
 
     $c->redirect_to('/upload.html');
 };
 
 post 'post' => sub( $c ) {
-    my $app = App::PostImage->new(
-        config => $config,
-    );
-    if( ! $c->session->{authenticated} ) {
+
+    my $session = validate_session( $c );
+    if( ! $session ) {
+        $c->redirect_to('/index.html');
+    };
+
+    if( ! $session->{authenticated} ) {
         $c->redirect_to('/index.html');
     };
 
@@ -119,8 +153,14 @@ post 'post' => sub( $c ) {
 
     # XXX Validate that the content type is jpeg
 
-    my $name = sprintf "%s/%s", $config->{directories}->{upload}, $filename;
+    my $name = sprintf "%s/%s", $backend->upload_dir, $filename;
     $file->move_to( $name );
+
+    # Wipe GPS data and other EXIF data?
+    # Overwrite/add our own EXIF data?
+    # Update our database with the new image
+    # Regenerate HTML
+    # Regenerate RSS
 
     #my $ok = $app->add_image(
     #);
