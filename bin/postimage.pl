@@ -28,7 +28,7 @@ push @{app->static->paths}, dir("$FindBin::Bin/../public")->absolute->stringify;
 
 # / should be handled as a static file, /index.html!
 get '/' => sub( $c ) {
-    return $c->redirect_to('/index.html');
+    return $c->redirect_to('index.html');
 };
 
 #get '/setup' => sub( $c ) {
@@ -131,18 +131,18 @@ get 'login/:name/:key' => sub( $c ) {
     );
     $c->session( $s );
 
-    $c->redirect_to('/upload.html');
+    $c->redirect_to('upload.html');
 };
 
 post 'post' => sub( $c ) {
 
     my $session = validate_session( $c );
     if( ! $session ) {
-        $c->redirect_to('/index.html');
+        $c->redirect_to('index.html');
     };
 
     if( ! $session->{authenticated} ) {
-        $c->redirect_to('/index.html');
+        $c->redirect_to('index.html');
     };
 
     # Save to local storage
