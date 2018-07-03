@@ -57,8 +57,8 @@ sub validate_session( $c, %args ) {
         return
     };
     %$session = (%$session,
-                 revalidate_in => $backend->config->{session}->{revalidate},
-                 expires       => (time + $backend->config->{session}->{expires}*24*3600),
+                 revalidate_after => (time+$backend->config->{session}->{revalidate}*24*3600),
+                 expires          => (time + $backend->config->{session}->{expires}*24*3600),
                  %args,
     );
 
