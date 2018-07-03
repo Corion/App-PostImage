@@ -159,14 +159,8 @@ post 'post' => sub( $c ) {
     # Wipe GPS data and other EXIF data?
     # Overwrite/add our own EXIF data?
     # Update our database with the new image
-    # Regenerate HTML
-    # Regenerate RSS
-
-    #my $ok = $app->add_image(
-    #);
-    #if( $ok ) {
-    #    $app->regenerate_image_list();
-    #};
+    my @tags = $c->params('tags');
+    $backend->add_image( $name, $session->{username}, \@tags );
 };
 
 app->start;
