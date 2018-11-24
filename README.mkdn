@@ -1,0 +1,19 @@
+
+[![Travis Build Status](https://travis-ci.org/Corion/App-PostImage.svg?branch=master)](https://travis-ci.org/Corion/App-PostImage)
+[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/Corion/App-PostImage?branch=master&svg=true)](https://ci.appveyor.com/project/Corion/App-PostImage)
+
+# NAME
+
+App::PostImage - simple image blog
+
+## `$self->check_config`
+
+    my ($has_errors, @messages) = $app->check_config();
+    warn for @messages;
+    if( $has_errors > 1 ) {
+        exit $errors;
+    };
+
+Checks the configuration and returns the suggested exit code. For configuration
+warnings, this will be 1, for errors that make it impossible to use this
+configuration, this will be 2 or larger.
