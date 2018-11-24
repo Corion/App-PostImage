@@ -16,6 +16,9 @@ App::PostImage::DB - database backend for user and image management
       dsn => 'dbi:SQLite:dbfile=mydb.sqlite',
   );
 
+You need SQLite 3.25.2 or any other database which includes
+SQL window functions. These make the page logic basically trivial.
+
 =cut
 
 has 'dsn' => (
@@ -33,7 +36,7 @@ has 'password' => (
 has 'dbh' => (
     is => 'lazy',
     default => sub( $self ) {
-        DBI->connect( $self->dbh, $self->username, $self->password, 
+        DBI->connect( $self->dbh, $self->username, $self->password,
             { RaiseError => 1, PrintError => 0 })
     },
 );
@@ -109,8 +112,8 @@ sub get_image( $self, $id ) {
     $self->_select(<<'SQL', $name );
         select
             id
-          , name
-          -- , email
+          , filename
+          , rank() over (partition by ... order by ...) as offset
           from "images"
          where id = ?
 SQL
@@ -134,6 +137,7 @@ sub update_tag( $self, $tag ) {
 }
 
 sub delete_tag( $self, $tag_id ) {
+    $self->_delete('tags', $tag_id )
 }
 
 sub add_image_tag( $self, $image_id, $tag_id ) {
