@@ -13,6 +13,12 @@ use App::PostImage::DB;
 
 our $VERSION = '0.01';
 
+=head1 NAME
+
+App::PostImage - simple image blog
+
+=cut
+
 has 'config_file' => (
     is => 'ro',
     default => sub {
